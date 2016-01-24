@@ -9,6 +9,7 @@ import (
 	"github.com/gophergala2016/meshbird/network/protocol"
 	"github.com/gophergala2016/meshbird/secure"
 	"os"
+	"bufio"
 )
 
 type RemoteNode struct {
@@ -52,13 +53,17 @@ func (rn *RemoteNode) listen(ln *LocalNode) {
 	rn.logger.Printf("Listening...")
 
 	for {
-		buf := make([]byte, 1500)
+		rn.logger.Printf("Reading...")
+		b, err := bufio.NewReader(rn.conn).ReadByte()
+		rn.logger.Printf("Read: %x, %v", b, err)
+
+		/*buf := make([]byte, 1500)
 		n, err := rn.conn.Read(buf)
 		if err != nil {
 			rn.logger.Printf("READ ERROR: %s", err)
 			break
 		}
-		rn.logger.Printf("RECEIVE MESSAGE: %d %x", n, buf[:n])
+		rn.logger.Printf("RECEIVE MESSAGE: %d %x", n, buf[:n])*/
 	}
 }
 
