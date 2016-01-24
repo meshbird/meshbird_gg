@@ -5,6 +5,7 @@ import (
 	"github.com/gophergala2016/meshbird/secure"
 	"log"
 	"sync"
+	"net"
 )
 
 type LocalNode struct {
@@ -97,4 +98,12 @@ func (n *LocalNode) Stop() error {
 
 func (n *LocalNode) NetworkSecret() *secure.NetworkSecret {
 	return n.secret
+}
+
+func (n *LocalNode) SendDatagram(data []byte, addr *net.UDPAddr) (int, error) {
+	listener, ok := n.Service("listener").(*ListenerService)
+	if !ok || listener == nil {
+		return 0, fmt.Errorf("Listener not found")
+	}
+	return listener.Conn().WriteToUDP(data, addr)
 }

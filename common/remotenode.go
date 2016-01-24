@@ -2,11 +2,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/anacrolix/utp"
+	//"github.com/anacrolix/utp"
 	"log"
 	"net"
 	"strconv"
-	"time"
+	//"time"
 
 	"github.com/gophergala2016/meshbird/network/protocol"
 	"github.com/gophergala2016/meshbird/secure"
@@ -14,18 +14,17 @@ import (
 
 type RemoteNode struct {
 	Node
-	conn          net.Conn
 	sessionKey    []byte
 	privateIP     net.IP
-	publicAddress string
+	publicAddress *net.UDPAddr
 }
 
-func NewRemoteNode(conn net.Conn, sessionKey []byte, privateIP net.IP) *RemoteNode {
+func NewRemoteNode(sessionKey []byte, privateIP net.IP, publicAddress *net.UDPAddr) *RemoteNode {
+	// TODO: Conn
 	return &RemoteNode{
-		conn:          conn,
 		sessionKey:    sessionKey,
 		privateIP:     privateIP,
-		publicAddress: conn.RemoteAddr().String(),
+		publicAddress: publicAddress,
 	}
 }
 
@@ -33,7 +32,7 @@ func (rn *RemoteNode) SendPacket(dstIP net.IP, payload []byte) error {
 	return nil
 }
 
-func TryConnect(h string, networkSecret *secure.NetworkSecret) (*RemoteNode, error) {
+func TryConnect(ln *LocalNode, h string, networkSecret *secure.NetworkSecret) (*RemoteNode, error) {
 	host, portStr, errSplit := net.SplitHostPort(h)
 	if errSplit != nil {
 		return nil, errSplit
@@ -45,23 +44,8 @@ func TryConnect(h string, networkSecret *secure.NetworkSecret) (*RemoteNode, err
 	}
 
 	rn := new(RemoteNode)
-	rn.publicAddress = fmt.Sprintf("%s:%d", host, port+1)
+	rn.publicAddress = &net.UDPAddr{IP: host, Port: port + 1}
 
-	log.Printf("Trying to connection to: %s", rn.publicAddress)
-
-	s, errSocket := utp.NewSocket("udp4", ":0")
-	if errSocket != nil {
-		log.Printf("Unable to crete a socket: %s", errSocket)
-		return nil, errSocket
-	}
-
-	conn, errDial := s.DialTimeout(rn.publicAddress, 10*time.Second)
-	if errDial != nil {
-		log.Printf("Unable to dial to %s: %s", rn.publicAddress, errDial)
-		return nil, errDial
-	}
-
-	rn.conn = conn
 	rn.sessionKey = RandomBytes(16)
 
 	if err := protocol.WriteEncodeHandshake(rn.conn, rn.sessionKey, networkSecret); err != nil {
@@ -82,7 +66,7 @@ func TryConnect(h string, networkSecret *secure.NetworkSecret) (*RemoteNode, err
 		return nil, err
 	}
 
-	log.Printf("Connected to node: %s/%s", rn.privateIP.String(), rn.publicAddress)
+	log.Printf("Connected to node: %s/%s", rn.privateIP.String(), rn.publicAddress.String())
 
 	return rn, nil
 }

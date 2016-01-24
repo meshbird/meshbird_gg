@@ -86,7 +86,7 @@ func (nt *NetTable) processDHTIn() {
 }
 
 func (nt *NetTable) tryConnect(h string) {
-	rn, err := TryConnect(h, nt.localNode.NetworkSecret())
+	rn, err := TryConnect(nt.localNode, h, nt.localNode.NetworkSecret())
 	if err != nil {
 		nt.addToBlackList(h)
 		return
