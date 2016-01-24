@@ -6,10 +6,11 @@ import (
 	"net"
 	"strconv"
 
+	"bufio"
 	"github.com/gophergala2016/meshbird/network/protocol"
 	"github.com/gophergala2016/meshbird/secure"
 	"os"
-	"bufio"
+	"io"
 )
 
 type RemoteNode struct {
@@ -36,13 +37,9 @@ func (rn *RemoteNode) SendPacket(payload []byte) error {
 }
 
 func (rn *RemoteNode) listen(ln *LocalNode) {
-	defer rn.logger.Printf("EXIT LISTEN")
 	defer func() {
-		netTable, ok := ln.Service("net-table").(*NetTable)
-		if !ok || netTable == nil {
-			return
-		}
-		netTable.RemoveRemoteNode(rn.privateIP)
+		rn.logger.Printf("EXIT LISTEN")
+		ln.NetTable().RemoveRemoteNode(rn.privateIP)
 	}()
 	//iface, ok := ln.Service("iface").(*InterfaceService)
 	//if !ok {
@@ -55,6 +52,10 @@ func (rn *RemoteNode) listen(ln *LocalNode) {
 	for {
 		rn.logger.Printf("Reading...")
 		b, err := bufio.NewReader(rn.conn).ReadByte()
+		if err == io.EOF {
+			rn.logger.Printf("EOF. exit from listen")
+			break
+		}
 		rn.logger.Printf("Read: %x, %v", b, err)
 
 		/*buf := make([]byte, 1500)
