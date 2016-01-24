@@ -2,11 +2,9 @@ package common
 
 import (
 	"fmt"
-	"github.com/anacrolix/utp"
 	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/gophergala2016/meshbird/network/protocol"
 	"github.com/gophergala2016/meshbird/secure"
@@ -81,13 +79,7 @@ func TryConnect(h string, networkSecret *secure.NetworkSecret) (*RemoteNode, err
 
 	rn.logger.Printf("Trying to connection to: %s", rn.publicAddress)
 
-	s, errSocket := utp.NewSocket("udp4", ":0")
-	if errSocket != nil {
-		rn.logger.Printf("Unable to crete a socket: %s", errSocket)
-		return nil, errSocket
-	}
-
-	conn, errDial := s.DialTimeout(rn.publicAddress, 10*time.Second)
+	conn, errDial := net.Dial("tcp4", rn.publicAddress)
 	if errDial != nil {
 		rn.logger.Printf("Unable to dial to %s: %s", rn.publicAddress, errDial)
 		return nil, errDial

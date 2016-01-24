@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"github.com/anacrolix/utp"
 	"github.com/gophergala2016/meshbird/network/protocol"
 	"log"
 	"net"
@@ -13,7 +12,7 @@ type ListenerService struct {
 	BaseService
 
 	localNode *LocalNode
-	socket    *utp.Socket
+	listener  net.Listener
 
 	logger *log.Logger
 }
@@ -24,21 +23,21 @@ func (l ListenerService) Name() string {
 
 func (l *ListenerService) Init(ln *LocalNode) error {
 	l.logger = log.New(os.Stderr, "[listener] ", log.LstdFlags)
-
 	l.logger.Printf("Listening on port: %d", ln.State().ListenPort+1)
-	socket, err := utp.NewSocket("udp4", fmt.Sprintf("0.0.0.0:%d", ln.State().ListenPort+1))
+
+	listener, err := net.Listen("tcp4", fmt.Sprintf(":%d", ln.State().ListenPort+1))
 	if err != nil {
 		return err
 	}
 
 	l.localNode = ln
-	l.socket = socket
+	l.listener = listener
 	return nil
 }
 
 func (l *ListenerService) Run() error {
 	for {
-		conn, err := l.socket.Accept()
+		conn, err := l.listener.Accept()
 		if err != nil {
 			break
 		}
@@ -54,7 +53,7 @@ func (l *ListenerService) Run() error {
 
 func (l *ListenerService) Stop() {
 	l.SetStatus(StatusStopping)
-	l.socket.Close()
+	l.listener.Close()
 }
 
 func (l *ListenerService) process(c net.Conn) error {
